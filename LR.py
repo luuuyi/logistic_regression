@@ -28,9 +28,75 @@ def gradientAscent(datas,labels):
         weights = weights + alpha*datas_mat.transpose()*errors          #梯度上升变形，朝着标准标签的方向缓慢移动
     return weights
 
-def plotBeatFit(weight,file_name):
+def randomGradientAscent(datas,labels):
+    datas_arr = array(datas)            #array和matrix有区别
+    h, w = shape(datas_arr)
+    alpha = 0.01
+    weights = ones(w)                   #一维矩阵
+    for i in range(h):
+        res = sigmoid(sum(datas_arr[i]*weights))
+        errors = labels[i] - res
+        weights = weights + alpha*errors*datas_arr[i]
+    return weights
+
+def advancedRandomGradientAscent(datas,labels,iter_nums=150):
+    import random
+    datas_arr = array(datas)           
+    h, w = shape(datas_arr)
+    weights = ones(w)                  
+    for i in range(iter_nums):
+        indexs = range(h)
+        for j in range(h):
+            alpha = 4/(1.0+j+i)+0.01
+            random_index = int(random.uniform(0,len(indexs)))
+            res = sigmoid(sum(datas_arr[random_index]*weights))
+            errors = labels[random_index] - res
+            weights = weights + alpha*errors*datas_arr[random_index]
+            del(indexs[random_index])
+    return weights
+
+def classifyResult(datas,weights):
+    pro = sigmoid(sum(datas*weights))
+    if pro >= 0.5:
+        return 1.0
+    else:
+        return 0.0
+
+def colicTest():
+    fd_train = open('horseColicTraining.txt')
+    fd_test = open('horseColicTest.txt')
+    train_datas=[]; train_labels=[]
+    for line in fd_train.readlines():
+        line_data_list = line.strip().split('\t')
+        tmp_list=[]
+        for i in range(21):
+            tmp_list.append(float(line_data_list[i]))
+        train_datas.append(tmp_list)
+        train_labels.append(float(line_data_list[21]))
+    weights = advancedRandomGradientAscent(train_datas,train_labels,500)
+    error_count = 0; total_size = 0.0
+    for line in fd_test.readlines():
+        total_size += 1.0
+        line_data_list = line.strip().split('\t')
+        test_data = []
+        for i in range(21):
+            test_data.append(float(line_data_list[i]))
+        if int(classifyResult(array(test_data),weights)) != int(line_data_list[21]):
+            error_count += 1
+    error_rate = float(error_count)/total_size
+    print "The Error Ratio is: %f" % error_rate
+    return error_rate
+
+def multiTest():
+    nums = 10; errors = 0.0
+    for i in range(nums):
+        errors += colicTest()
+    errors_mean = errors / 10.0
+    print "The Mean Error Ratio is: %f" % errors_mean
+    return errors_mean
+
+def plotBeatFit(wet_array,file_name):
     import matplotlib.pyplot as plt
-    wet_array = weight.getA()
     datas, labels = loadDatasFromFile(file_name)
     datas = array(datas)
     height = shape(datas)[0]
@@ -53,8 +119,13 @@ def plotBeatFit(weight,file_name):
 
 if __name__ == '__main__':
     file_name = 'testSet.txt'
-    datas, labels = loadDatasFromFile(file_name)
+    #datas, labels = loadDatasFromFile(file_name)
+    #weights = advancedRandomGradientAscent(datas,labels)
     #print datas, labels
-    weights = gradientAscent(datas,labels)
+    #weights = gradientAscent(datas,labels)
+    #plotBeatFit(weights.getA(),file_name)
+    #weights = randomGradientAscent(datas,labels)
     #print weights
-    plotBeatFit(weights,file_name)
+    #plotBeatFit(weights,file_name)
+    #colicTest()
+    multiTest()
